@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface SuccessResponse {
-  success: boolean;
+export interface ChannelOption {
+  id: string;
+  name: string;
 }

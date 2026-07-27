@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface SuccessResponse {
-  success: boolean;
+export interface GuildOption {
+  id: string;
+  name: string;
+  /** @nullable */
+  icon?: string | null;
 }

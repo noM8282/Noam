@@ -9,6 +9,9 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+// Trust Replit's reverse proxy so req.secure works and cookies are set correctly
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,
@@ -36,24 +39,23 @@ app.use(
     store: new PgStore({
       pool,
       tableName: "sessions",
-      createTableIfMissing: true,
+      // Table is created manually via migration — do NOT set createTableIfMissing
+      // (it reads a .sql file that esbuild can't bundle)
     }),
     secret: process.env.SESSION_SECRET ?? "dev-secret-change-me",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      // Replit proxies HTTPS → HTTP internally; trust proxy=1 makes req.secure work
+      secure: "auto",
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      sameSite: "lax",
     },
   }),
 );
 
-app.use(cors({
-  origin: true,
-  credentials: true,
-}));
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

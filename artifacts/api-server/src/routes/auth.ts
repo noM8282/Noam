@@ -7,7 +7,8 @@ import { requireAuth } from "../middlewares/auth";
 const router = Router();
 
 const DISCORD_API = "https://discord.com/api/v10";
-const DISCORD_SCOPES = "identify";
+// Request guilds scope so we can sync servers the bot is in
+const DISCORD_SCOPES = "identify guilds";
 
 function getRedirectUri(req: { headers: { host?: string } }): string {
   if (process.env.DISCORD_REDIRECT_URI) {
@@ -118,7 +119,18 @@ router.get("/auth/discord/callback", async (req, res): Promise<void> => {
   }
 
   req.session.userId = userId;
-  res.redirect("/");
+  req.session.discordAccessToken = tokenData.access_token;
+
+  // Explicitly save session before redirecting — critical because the redirect
+  // fires res.end() immediately and the async pg write might not complete first
+  req.session.save((err) => {
+    if (err) {
+      req.log.error({ err }, "Failed to save session after OAuth");
+      res.status(500).json({ error: "Session error" });
+      return;
+    }
+    res.redirect("/");
+  });
 });
 
 router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
