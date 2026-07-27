@@ -1,0 +1,193 @@
+I want to build a full script management platform with a web dashboard and Discord bot.
+
+The system has two parts:
+1. Web Dashboard
+2. Discord Bot
+
+====================
+WEB DASHBOARD
+====================
+
+Create a modern dashboard layout.
+
+Sidebar:
+
+- Overview
+- Scripts
+- Panels
+- Keys
+- Servers
+- Settings
+- Logout
+
+
+Overview page:
+- Total scripts
+- Total panels
+- Total keys generated
+- Active users
+- Connected Discord servers
+
+
+Scripts page:
+Users can:
+- Upload scripts
+- Create script projects
+- Edit script information
+- Change versions
+- Enable/disable scripts
+- Manage script access
+
+
+Panels page:
+Users can:
+- Create Discord script panels
+- Customize panel name
+- Add description
+- Select script
+- Select required roles
+- Generate Discord embed panel
+
+
+Keys page:
+Users can:
+- Generate keys
+- View keys
+- Revoke keys
+- Set expiration
+- Set whitelist status
+
+
+Settings page:
+- Discord connection
+- API settings
+- Account settings
+
+
+====================
+DISCORD BOT
+====================
+
+Use Discord.js.
+
+Bot commands:
+
+/panel create
+- Create a script panel
+- Select script
+- Send embed message
+- Add buttons
+
+
+/panel send
+- Send panel to selected channel
+
+
+/panel delete
+- Delete panel
+
+
+/whitelist add
+- Add user to script whitelist
+
+
+/whitelist remove
+- Remove user from whitelist
+
+
+/whitelist list
+- Show whitelist users
+
+
+/key generate
+- Generate license key
+
+
+/key revoke
+- Revoke key
+
+
+/script list
+- Show available scripts
+
+
+/server setup
+- Connect Discord server with website
+
+
+====================
+DATABASE
+====================
+
+Create tables:
+
+users:
+- id
+- discord_id
+- username
+- avatar
+- created_at
+
+
+scripts:
+- id
+- owner_id
+- name
+- description
+- version
+- status
+
+
+panels:
+- id
+- owner_id
+- script_id
+- discord_server_id
+- channel_id
+- message_id
+
+
+licenses:
+- id
+- key
+- script_id
+- user_id
+- expires_at
+- status
+
+
+whitelist:
+- id
+- script_id
+- discord_user_id
+- added_by
+
+
+servers:
+- id
+- guild_id
+- owner_id
+- name
+
+
+====================
+TECH STACK
+====================
+
+Frontend:
+React + TailwindCSS
+
+Backend:
+Node.js + Express
+
+Database:
+PostgreSQL
+
+Authentication:
+Discord OAuth2
+
+Bot:
+Discord.js
+
+Create the folder structure first.
+Do not code everything at once.
