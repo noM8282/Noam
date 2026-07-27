@@ -1,4 +1,4 @@
-# ScriptHub
+# LuaBox
 
 A full-stack script management platform for developers who build and distribute scripts (Lua, game mods, etc.) to Discord communities. Includes a web dashboard and a Discord bot.
 
@@ -55,7 +55,7 @@ In your Discord application at https://discord.com/developers/applications:
 - `/whitelist add|remove|list` — manage per-script whitelists
 - `/key generate|revoke` — manage license keys
 - `/script list` — list active scripts
-- `/server setup` — connect a Discord guild to ScriptHub
+- `/server setup` — connect a Discord guild to LuaBox
 
 ## Architecture decisions
 

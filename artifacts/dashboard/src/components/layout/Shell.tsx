@@ -60,7 +60,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <div className="flex h-14 items-center border-b border-sidebar-border px-6">
           <Link href="/" className="flex items-center gap-2 font-bold tracking-tight text-primary">
             <TerminalSquare className="h-5 w-5" />
-            <span>ScriptHub</span>
+            <span>LuaBox</span>
           </Link>
         </div>
         <div className="flex flex-col h-[calc(100vh-3.5rem)] py-4">
@@ -111,7 +111,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <Button variant="ghost" size="icon" onClick={() => setIsMobileOpen(!isMobileOpen)}>
             <Menu className="h-5 w-5" />
           </Button>
-          <span className="ml-4 font-bold text-primary">ScriptHub</span>
+          <span className="ml-4 font-bold text-primary">LuaBox</span>
         </div>
         <div className="flex-1 p-6 md:p-8">
           {children}

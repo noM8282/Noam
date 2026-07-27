@@ -29,7 +29,7 @@ export function Settings() {
       <Card>
         <CardHeader>
           <CardTitle>Discord Account</CardTitle>
-          <CardDescription>The Discord account linked to your ScriptHub profile.</CardDescription>
+          <CardDescription>The Discord account linked to your LuaBox profile.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center gap-4">

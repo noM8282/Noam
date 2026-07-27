@@ -104,7 +104,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("server")
     .setDescription("Manage Discord server connection")
-    .addSubcommand((sub) => sub.setName("setup").setDescription("Connect this Discord server to ScriptHub")),
+    .addSubcommand((sub) => sub.setName("setup").setDescription("Connect this Discord server to LuaBox")),
 ].map((cmd) => cmd.toJSON());
 
 // --- Register commands ---
@@ -353,7 +353,7 @@ async function handleServerSetup(interaction: ChatInputCommandInteraction) {
 
   const [existing] = await db.select().from(serversTable).where(eq(serversTable.guildId, guildId)).limit(1);
   if (existing) {
-    await interaction.reply({ content: `This server (${guildName}) is already connected to ScriptHub.`, ephemeral: true });
+    await interaction.reply({ content: `This server (${guildName}) is already connected to LuaBox.`, ephemeral: true });
     return;
   }
 
@@ -361,7 +361,7 @@ async function handleServerSetup(interaction: ChatInputCommandInteraction) {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.discordId, interaction.user.id)).limit(1);
   if (!user) {
     await interaction.reply({
-      content: "You must log in to ScriptHub first at your dashboard before connecting a server.",
+      content: "You must log in to LuaBox first at your dashboard before connecting a server.",
       ephemeral: true,
     });
     return;
@@ -375,7 +375,7 @@ async function handleServerSetup(interaction: ChatInputCommandInteraction) {
 
   const embed = new EmbedBuilder()
     .setTitle("Server Connected")
-    .setDescription(`**${guildName}** is now connected to ScriptHub.`)
+    .setDescription(`**${guildName}** is now connected to LuaBox.`)
     .setColor(0x57f287)
     .setTimestamp();
 

@@ -11,7 +11,7 @@ export function Login() {
             <TerminalSquare className="h-6 w-6 text-primary" />
           </div>
           <div className="space-y-2">
-            <CardTitle className="text-2xl font-bold tracking-tight">Welcome to ScriptHub</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight">Welcome to LuaBox</CardTitle>
             <CardDescription className="text-base">
               The professional control panel for script developers.
             </CardDescription>
