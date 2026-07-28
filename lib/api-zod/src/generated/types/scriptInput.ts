@@ -12,4 +12,5 @@ export interface ScriptInput {
   description?: string;
   /** @minLength 1 */
   version: string;
+  content?: string;
 }

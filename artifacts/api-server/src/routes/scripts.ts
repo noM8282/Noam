@@ -16,6 +16,7 @@ import {
   ListScriptsResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
+import { obfuscateLua } from "../lib/obfuscate";
 
 const router = Router();
 
@@ -31,6 +32,8 @@ function formatScript(s: typeof scriptsTable.$inferSelect) {
     description: s.description,
     version: s.version,
     status: s.status as "active" | "disabled",
+    content: s.content,
+    obfuscatedContent: s.obfuscatedContent,
     createdAt: s.createdAt.toISOString(),
   };
 }
@@ -51,9 +54,13 @@ router.post("/scripts", requireAuth, async (req, res): Promise<void> => {
     return;
   }
   const userId = req.session.userId!;
+
+  const { content, ...rest } = parsed.data;
+  const obfuscatedContent = content ? obfuscateLua(content) : undefined;
+
   const [script] = await db
     .insert(scriptsTable)
-    .values({ ...parsed.data, ownerId: userId })
+    .values({ ...rest, ownerId: userId, content, obfuscatedContent })
     .returning();
   res.status(201).json(CreateScriptResponse.parse(formatScript(script)));
 });
@@ -88,9 +95,17 @@ router.patch("/scripts/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
   const userId = req.session.userId!;
+
+  const { content, ...rest } = bodyParsed.data;
+  const updateData: Partial<typeof scriptsTable.$inferInsert> = { ...rest };
+  if (content !== undefined) {
+    updateData.content = content;
+    updateData.obfuscatedContent = obfuscateLua(content);
+  }
+
   const [script] = await db
     .update(scriptsTable)
-    .set(bodyParsed.data)
+    .set(updateData)
     .where(and(eq(scriptsTable.id, paramsParsed.data.id), eq(scriptsTable.ownerId, userId)))
     .returning();
   if (!script) {
@@ -125,21 +140,21 @@ router.post("/scripts/:id/toggle", requireAuth, async (req, res): Promise<void> 
     return;
   }
   const userId = req.session.userId!;
-  const [existing] = await db
+  const [current] = await db
     .select()
     .from(scriptsTable)
     .where(and(eq(scriptsTable.id, params.data.id), eq(scriptsTable.ownerId, userId)));
-  if (!existing) {
+  if (!current) {
     res.status(404).json({ error: "Script not found" });
     return;
   }
-  const newStatus = existing.status === "active" ? "disabled" : "active";
-  const [script] = await db
+  const newStatus = current.status === "active" ? "disabled" : "active";
+  const [updated] = await db
     .update(scriptsTable)
     .set({ status: newStatus })
     .where(eq(scriptsTable.id, params.data.id))
     .returning();
-  res.json(ToggleScriptResponse.parse(formatScript(script)));
+  res.json(ToggleScriptResponse.parse(formatScript(updated)));
 });
 
 export default router;

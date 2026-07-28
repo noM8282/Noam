@@ -71,6 +71,10 @@ export interface Script {
   description?: string | null;
   version: string;
   status: ScriptStatus;
+  /** @nullable */
+  content?: string | null;
+  /** @nullable */
+  obfuscatedContent?: string | null;
   createdAt: string;
 }
 
@@ -80,6 +84,7 @@ export interface ScriptInput {
   description?: string;
   /** @minLength 1 */
   version: string;
+  content?: string;
 }
 
 export type ScriptUpdateStatus = typeof ScriptUpdateStatus[keyof typeof ScriptUpdateStatus];
@@ -97,6 +102,7 @@ export interface ScriptUpdate {
   /** @minLength 1 */
   version?: string;
   status?: ScriptUpdateStatus;
+  content?: string;
 }
 
 export interface Panel {

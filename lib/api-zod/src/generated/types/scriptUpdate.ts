@@ -14,4 +14,5 @@ export interface ScriptUpdate {
   /** @minLength 1 */
   version?: string;
   status?: ScriptUpdateStatus;
+  content?: string;
 }

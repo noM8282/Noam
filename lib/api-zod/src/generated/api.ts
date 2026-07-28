@@ -100,6 +100,8 @@ export const ListScriptsResponseItem = zod.object({
   "description": zod.string().nullish(),
   "version": zod.string(),
   "status": zod.enum(['active', 'disabled']),
+  "content": zod.string().nullish(),
+  "obfuscatedContent": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListScriptsResponse = zod.array(ListScriptsResponseItem)
@@ -115,7 +117,8 @@ export const ListScriptsResponse = zod.array(ListScriptsResponseItem)
 export const CreateScriptBody = zod.object({
   "name": zod.string().min(1),
   "description": zod.string().optional(),
-  "version": zod.string().min(1)
+  "version": zod.string().min(1),
+  "content": zod.string().optional()
 })
 
 export const CreateScriptResponse = zod.object({
@@ -125,6 +128,8 @@ export const CreateScriptResponse = zod.object({
   "description": zod.string().nullish(),
   "version": zod.string(),
   "status": zod.enum(['active', 'disabled']),
+  "content": zod.string().nullish(),
+  "obfuscatedContent": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -143,6 +148,8 @@ export const GetScriptResponse = zod.object({
   "description": zod.string().nullish(),
   "version": zod.string(),
   "status": zod.enum(['active', 'disabled']),
+  "content": zod.string().nullish(),
+  "obfuscatedContent": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -162,7 +169,8 @@ export const UpdateScriptBody = zod.object({
   "name": zod.string().min(1).optional(),
   "description": zod.string().optional(),
   "version": zod.string().min(1).optional(),
-  "status": zod.enum(['active', 'disabled']).optional()
+  "status": zod.enum(['active', 'disabled']).optional(),
+  "content": zod.string().optional()
 })
 
 export const UpdateScriptResponse = zod.object({
@@ -172,6 +180,8 @@ export const UpdateScriptResponse = zod.object({
   "description": zod.string().nullish(),
   "version": zod.string(),
   "status": zod.enum(['active', 'disabled']),
+  "content": zod.string().nullish(),
+  "obfuscatedContent": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -202,6 +212,8 @@ export const ToggleScriptResponse = zod.object({
   "description": zod.string().nullish(),
   "version": zod.string(),
   "status": zod.enum(['active', 'disabled']),
+  "content": zod.string().nullish(),
+  "obfuscatedContent": zod.string().nullish(),
   "createdAt": zod.string()
 })
 

@@ -687,6 +687,10 @@ components:
         status:
           type: string
           enum: [active, disabled]
+        content:
+          type: ["string", "null"]
+        obfuscatedContent:
+          type: ["string", "null"]
         createdAt:
           type: string
 
@@ -702,6 +706,8 @@ components:
         version:
           type: string
           minLength: 1
+        content:
+          type: string
 
     ScriptUpdate:
       type: object
@@ -717,6 +723,8 @@ components:
         status:
           type: string
           enum: [active, disabled]
+        content:
+          type: string
 
     Panel:
       type: object

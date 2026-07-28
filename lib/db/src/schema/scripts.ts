@@ -10,6 +10,8 @@ export const scriptsTable = pgTable("scripts", {
   description: text("description"),
   version: text("version").notNull().default("1.0.0"),
   status: text("status").notNull().default("active"),
+  content: text("content"),
+  obfuscatedContent: text("obfuscated_content"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

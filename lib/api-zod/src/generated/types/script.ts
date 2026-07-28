@@ -15,5 +15,9 @@ export interface Script {
   description?: string | null;
   version: string;
   status: ScriptStatus;
+  /** @nullable */
+  content?: string | null;
+  /** @nullable */
+  obfuscatedContent?: string | null;
   createdAt: string;
 }
