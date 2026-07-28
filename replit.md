@@ -1,79 +1,48 @@
-# LuaBox
+# LuaBox — Script Management Platform
 
-A full-stack script management platform for developers who build and distribute scripts (Lua, game mods, etc.) to Discord communities. Includes a web dashboard and a Discord bot.
+A full-stack script management platform for Lua script developers, with a web dashboard and Discord bot integration.
 
-## Run & Operate
+## Architecture
 
-- `pnpm --filter @workspace/api-server run dev` — API server (port 8080, proxied at `/api`)
-- `pnpm --filter @workspace/dashboard run dev` — Web dashboard (proxied at `/`)
-- `pnpm --filter @workspace/discord-bot run build && pnpm --filter @workspace/discord-bot run start` — Discord bot
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL`, `SESSION_SECRET`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN`
-- Optional env: `DISCORD_REDIRECT_URI` — override OAuth2 redirect URI (defaults to `https://$REPLIT_DEV_DOMAIN/api/auth/discord/callback`)
+| Service | Path | Description |
+|---|---|---|
+| Dashboard (React/Vite) | `artifacts/dashboard/` | Web UI — login, scripts, panels, keys, servers |
+| API Server (Express) | `artifacts/api-server/` | REST API, session auth, Discord OAuth |
+| Discord Bot (discord.js) | `artifacts/discord-bot/` | Slash commands for panels & whitelist |
+| DB library | `lib/db/` | Drizzle ORM schema + pg pool |
+| API client | `lib/api-client-react/` | React Query hooks (orval-generated) |
+| API spec | `lib/api-spec/` | OpenAPI YAML + orval config |
+| Zod schemas | `lib/api-zod/` | Runtime validation types (orval-generated) |
 
-## Discord Setup (Required)
+## Running the project
 
-In your Discord application at https://discord.com/developers/applications:
-1. **OAuth2 → Redirects**: Add `https://<your-dev-domain>/api/auth/discord/callback`
-2. **Bot → Privileged Gateway Intents**: Enable as needed
-3. **Bot invite URL** (OAuth2 → URL Generator): scopes `bot` + `applications.commands`, permissions as required
+All services start via their Replit workflows:
+- **Dashboard** — `artifacts/dashboard: web` workflow (Vite dev server)
+- **API Server** — `artifacts/api-server: API Server` workflow (esbuild + Node)
+- **Discord Bot** — `Discord Bot` workflow (esbuild + Node watch)
 
-## Stack
+## Required secrets
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- Frontend: React + Vite + Tailwind CSS + shadcn/ui, wouter routing
-- API: Express 5 with express-session (PostgreSQL session store)
-- DB: PostgreSQL + Drizzle ORM
-- Auth: Discord OAuth2 (custom implementation, no passport)
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Discord bot: discord.js v14
+| Secret | Where to get it |
+|---|---|
+| `SESSION_SECRET` | Any random string (already set) |
+| `DISCORD_BOT_TOKEN` | Discord Developer Portal → App → Bot tab |
+| `DISCORD_CLIENT_ID` | Discord Developer Portal → App → General Information → Application ID |
+| `DISCORD_CLIENT_SECRET` | Discord Developer Portal → App → OAuth2 tab |
 
-## Where things live
+`DATABASE_URL` and `PG*` vars are managed automatically by Replit.
 
-- `lib/api-spec/openapi.yaml` — OpenAPI spec (source of truth for all endpoints)
-- `lib/db/src/schema/` — database tables (users, scripts, panels, licenses, whitelist, servers)
-- `artifacts/api-server/src/routes/` — Express route handlers
-- `artifacts/api-server/src/middlewares/auth.ts` — `requireAuth` middleware
-- `artifacts/dashboard/src/` — React frontend
-- `artifacts/discord-bot/src/index.ts` — Discord bot (all slash commands in one file)
+## Database
 
-## Database Tables
+PostgreSQL via Replit's built-in database. Schema managed with Drizzle ORM.
+Tables: `users`, `scripts`, `panels`, `licenses`, `whitelist`, `servers`, `sessions`.
 
-- `users` — Discord-authenticated users
-- `scripts` — script projects with version + status
-- `panels` — Discord embed panels linked to scripts
-- `licenses` — license keys (generated with `SCH-` prefix)
-- `whitelist` — per-script Discord user whitelist
-- `servers` — connected Discord guilds
-
-## Discord Bot Commands
-
-- `/panel create|send|delete` — manage Discord embed panels
-- `/whitelist add|remove|list` — manage per-script whitelists
-- `/key generate|revoke` — manage license keys
-- `/script list` — list active scripts
-- `/server setup` — connect a Discord guild to LuaBox
-
-## Architecture decisions
-
-- Discord OAuth2 implemented directly with fetch (no passport.js) for simplicity
-- Sessions stored in PostgreSQL via `connect-pg-simple` using the `SESSION_SECRET` env
-- API is contract-first: all types generated from `lib/api-spec/openapi.yaml` via Orval
-- Discord bot runs as a separate process with direct DB access (no API round-trip)
-- `DISCORD_REDIRECT_URI` falls back to `REPLIT_DEV_DOMAIN` for zero-config dev
+To regenerate the API client/zod schemas after changing `lib/api-spec/openapi.yaml`:
+```
+pnpm --filter @workspace/api-spec run generate
+```
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
-
-## Gotchas
-
-- After any OpenAPI spec change, run codegen: `pnpm --filter @workspace/api-spec run codegen`
-- Discord OAuth2 redirect URI must be registered in the Discord Developer Portal
-- Bot slash commands register globally on startup (~1 hour Discord propagation) or per-guild immediately
-- Session cookie is `secure: true` in production — ensure HTTPS
-- **Database**: `DATABASE_URL` is runtime-managed by Replit. If a `DATABASE_URL` secret exists, `lib/db/src/index.ts` validates the hostname and falls back to `PGHOST`/`PGPORT`/`PGUSER`/`PGPASSWORD`/`PGDATABASE` env vars (Replit's managed Postgres at `helium:5432/heliumdb`) when the secret points to an invalid host.
-- **Panel buttons**: Panels sent via `/panel send` now include "Get Key" 🔑 and "Check Status" ✅ buttons. Button custom IDs follow the pattern `get_key:{panelId}` and `check_status:{panelId}` — the bot handles these in the `interactionCreate` listener.
+- Keep existing monorepo structure (pnpm workspace)
+- Do not restructure or migrate the stack
