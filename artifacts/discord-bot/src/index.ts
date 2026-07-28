@@ -746,12 +746,23 @@ async function handleServerSetup(interaction: ChatInputCommandInteraction) {
 const NO_ACCESS_MSG =
   "❌ You do not have valid access to this Panel.\nRedeem a key first using the **🔑 Redeem Key** button.";
 
+function parseButtonId(customId: string): { action: string; param: string } {
+  if (customId.includes(":")) {
+    const idx = customId.indexOf(":");
+    return { action: customId.slice(0, idx), param: customId.slice(idx + 1) };
+  }
+  const lastIdx = customId.lastIndexOf("_");
+  const param = customId.slice(lastIdx + 1);
+  let action = customId.slice(0, lastIdx);
+  if (action === "view_script") action = "get_script";
+  if (action === "buyer_role") action = "get_role";
+  return { action, param };
+}
+
 async function handleButtonInteraction(interaction: ButtonInteraction) {
   await interaction.deferReply({ ephemeral: true });
 
-  const colonIdx = interaction.customId.indexOf(":");
-  const action = colonIdx === -1 ? interaction.customId : interaction.customId.slice(0, colonIdx);
-  const param = colonIdx === -1 ? "" : interaction.customId.slice(colonIdx + 1);
+  const { action, param } = parseButtonId(interaction.customId);
 
   // ---- Whitelist panel: Generate Key button ----
   if (action === "wl_genkey") {
@@ -1166,9 +1177,11 @@ client.on("guildCreate", async (guild) => {
 client.on("interactionCreate", async (interaction: Interaction) => {
   // ---- Button ----
   if (interaction.isButton()) {
+    const { action: btnAction, param: btnParam } = parseButtonId(interaction.customId);
+
     // Redeem key button: show modal BEFORE deferring (modals can't follow a defer)
-    if (interaction.customId.startsWith("redeem_key:")) {
-      const panelId = parseInt(interaction.customId.split(":")[1], 10);
+    if (btnAction === "redeem_key") {
+      const panelId = parseInt(parseButtonId(interaction.customId).param, 10);
       if (isNaN(panelId)) {
         await interaction.reply({ content: "Invalid panel.", ephemeral: true });
         return;
@@ -1194,8 +1207,8 @@ client.on("interactionCreate", async (interaction: Interaction) => {
     }
 
     // Whitelist generate key button: show modal BEFORE deferring
-    if (interaction.customId.startsWith("wl_genkey:")) {
-      const scriptId = parseInt(interaction.customId.split(":")[1], 10);
+    if (btnAction === "wl_genkey") {
+      const scriptId = parseInt(btnParam, 10);
       if (isNaN(scriptId)) {
         await interaction.reply({ content: "Invalid panel data.", ephemeral: true });
         return;
