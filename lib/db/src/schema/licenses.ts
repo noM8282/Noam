@@ -12,6 +12,7 @@ export const licensesTable = pgTable("licenses", {
   expiresAt: timestamp("expires_at", { withTimezone: true }),
   status: text("status").notNull().default("active"),
   whitelisted: boolean("whitelisted").notNull().default(false),
+  hwid: text("hwid"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

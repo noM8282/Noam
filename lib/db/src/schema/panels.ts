@@ -14,6 +14,7 @@ export const panelsTable = pgTable("panels", {
   channelId: text("channel_id"),
   messageId: text("message_id"),
   requiredRoles: text("required_roles").array().notNull().default([]),
+  buyerRoleId: text("buyer_role_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
