@@ -14,6 +14,7 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
   PermissionFlagsBits,
+  type AutocompleteInteraction,
   type ChatInputCommandInteraction,
   type ButtonInteraction,
   type ModalSubmitInteraction,
@@ -113,8 +114,9 @@ const commands = [
         .addIntegerOption((opt) =>
           opt
             .setName("script_id")
-            .setDescription("Script ID")
-            .setRequired(true),
+            .setDescription("Script — start typing to search")
+            .setRequired(true)
+            .setAutocomplete(true),
         )
         .addStringOption((opt) =>
           opt.setName("description").setDescription("Panel description"),
@@ -125,7 +127,11 @@ const commands = [
         .setName("send")
         .setDescription("Send a panel to a channel")
         .addIntegerOption((opt) =>
-          opt.setName("panel_id").setDescription("Panel ID").setRequired(true),
+          opt
+            .setName("panel_id")
+            .setDescription("Panel — start typing to search")
+            .setRequired(true)
+            .setAutocomplete(true),
         )
         .addChannelOption((opt) =>
           opt
@@ -146,7 +152,11 @@ const commands = [
         .setName("delete")
         .setDescription("Delete a panel")
         .addIntegerOption((opt) =>
-          opt.setName("panel_id").setDescription("Panel ID").setRequired(true),
+          opt
+            .setName("panel_id")
+            .setDescription("Panel — start typing to search")
+            .setRequired(true)
+            .setAutocomplete(true),
         ),
     ),
 
@@ -160,8 +170,9 @@ const commands = [
         .addIntegerOption((opt) =>
           opt
             .setName("script_id")
-            .setDescription("Script ID to link this panel to")
-            .setRequired(true),
+            .setDescription("Script — start typing to search")
+            .setRequired(true)
+            .setAutocomplete(true),
         )
         .addChannelOption((opt) =>
           opt
@@ -175,7 +186,11 @@ const commands = [
         .setName("add")
         .setDescription("Add a user to the whitelist")
         .addIntegerOption((opt) =>
-          opt.setName("script_id").setDescription("Script ID").setRequired(true),
+          opt
+            .setName("script_id")
+            .setDescription("Script — start typing to search")
+            .setRequired(true)
+            .setAutocomplete(true),
         )
         .addUserOption((opt) =>
           opt
@@ -189,7 +204,11 @@ const commands = [
         .setName("remove")
         .setDescription("Remove a user from the whitelist")
         .addIntegerOption((opt) =>
-          opt.setName("script_id").setDescription("Script ID").setRequired(true),
+          opt
+            .setName("script_id")
+            .setDescription("Script — start typing to search")
+            .setRequired(true)
+            .setAutocomplete(true),
         )
         .addUserOption((opt) =>
           opt
@@ -203,7 +222,11 @@ const commands = [
         .setName("list")
         .setDescription("List whitelist users for a script")
         .addIntegerOption((opt) =>
-          opt.setName("script_id").setDescription("Script ID").setRequired(true),
+          opt
+            .setName("script_id")
+            .setDescription("Script — start typing to search")
+            .setRequired(true)
+            .setAutocomplete(true),
         ),
     ),
 
@@ -215,7 +238,11 @@ const commands = [
         .setName("generate")
         .setDescription("Generate a license key")
         .addIntegerOption((opt) =>
-          opt.setName("script_id").setDescription("Script ID").setRequired(true),
+          opt
+            .setName("script_id")
+            .setDescription("Script — start typing to search")
+            .setRequired(true)
+            .setAutocomplete(true),
         )
         .addUserOption((opt) =>
           opt.setName("user").setDescription("Assign to a Discord user"),
@@ -1269,6 +1296,39 @@ async function handleWlGenkeyModal(
 }
 
 // ---------------------------------------------------------------------------
+// Autocomplete handler
+// ---------------------------------------------------------------------------
+
+async function handleAutocomplete(interaction: AutocompleteInteraction) {
+  const focused = interaction.options.getFocused(true);
+  const query = focused.value.toString().toLowerCase();
+
+  if (focused.name === "panel_id") {
+    const panels = await db.select().from(panelsTable).limit(25);
+    const filtered = panels
+      .filter((p) => p.name.toLowerCase().includes(query) || String(p.id).includes(query))
+      .slice(0, 25);
+    await interaction.respond(
+      filtered.map((p) => ({ name: `${p.name} (ID: ${p.id})`, value: p.id })),
+    );
+    return;
+  }
+
+  if (focused.name === "script_id") {
+    const scripts = await db.select().from(scriptsTable).limit(25);
+    const filtered = scripts
+      .filter((s) => s.name.toLowerCase().includes(query) || String(s.id).includes(query))
+      .slice(0, 25);
+    await interaction.respond(
+      filtered.map((s) => ({ name: `${s.name} v${s.version} (ID: ${s.id})`, value: s.id })),
+    );
+    return;
+  }
+
+  await interaction.respond([]);
+}
+
+// ---------------------------------------------------------------------------
 // Discord client
 // ---------------------------------------------------------------------------
 
@@ -1291,6 +1351,17 @@ client.on("guildCreate", async (guild) => {
 });
 
 client.on("interactionCreate", async (interaction: Interaction) => {
+  // ---- Autocomplete ----
+  if (interaction.isAutocomplete()) {
+    try {
+      await handleAutocomplete(interaction as AutocompleteInteraction);
+    } catch (err) {
+      logger.error({ err }, "Autocomplete error");
+      await interaction.respond([]).catch(() => {});
+    }
+    return;
+  }
+
   // ---- String select menu ----
   if (interaction.isStringSelectMenu()) {
     if (interaction.customId === "linkpanel_select") {
