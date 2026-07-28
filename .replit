@@ -75,4 +75,3 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
-DISCORD_REDIRECT_URI = "https://90b66961-8a1e-4ed3-aec9-6434d6a5e57a-00-15wirx5lo7j82.sisko.replit.dev/api/auth/discord/callback"

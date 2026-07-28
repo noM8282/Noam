@@ -11,10 +11,13 @@ import {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
   PermissionFlagsBits,
   type ChatInputCommandInteraction,
   type ButtonInteraction,
   type ModalSubmitInteraction,
+  type StringSelectMenuInteraction,
   type Interaction,
   type TextChannel,
 } from "discord.js";
@@ -246,6 +249,21 @@ const commands = [
       sub
         .setName("setup")
         .setDescription("Connect this Discord server to LuaBox"),
+    ),
+
+  new SlashCommandBuilder()
+    .setName("linkpanel")
+    .setDescription("Send a panel to a channel — pick from a list instead of typing an ID")
+    .addChannelOption((opt) =>
+      opt
+        .setName("channel")
+        .setDescription("Channel to send the panel to")
+        .setRequired(true),
+    )
+    .addRoleOption((opt) =>
+      opt
+        .setName("buyer_role")
+        .setDescription("Role to assign when user clicks Get Buyer Role (optional)"),
     ),
 ].map((cmd) => cmd.toJSON());
 
@@ -684,6 +702,98 @@ async function handleScriptList(interaction: ChatInputCommandInteraction) {
     .setTimestamp();
 
   await interaction.reply({ embeds: [embed] });
+}
+
+async function handleLinkPanel(interaction: ChatInputCommandInteraction) {
+  const channel = interaction.options.getChannel("channel", true);
+  const buyerRole = interaction.options.getRole("buyer_role");
+
+  const panels = await db.select().from(panelsTable);
+
+  if (panels.length === 0) {
+    await interaction.reply({
+      content: "No panels found. Create one first via the dashboard or `/panel create`.",
+      ephemeral: true,
+    });
+    return;
+  }
+
+  // Discord select menus max 25 options
+  const options = panels.slice(0, 25).map((p) =>
+    new StringSelectMenuOptionBuilder()
+      .setLabel(p.name)
+      .setDescription(`Panel ID: ${p.id}`)
+      .setValue(`${p.id}:${channel.id}:${buyerRole?.id ?? ""}`)
+  );
+
+  const select = new StringSelectMenuBuilder()
+    .setCustomId("linkpanel_select")
+    .setPlaceholder("Choose a panel to send…")
+    .addOptions(options);
+
+  const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
+
+  await interaction.reply({
+    content: `Select a panel to post in <#${channel.id}>:`,
+    components: [row],
+    ephemeral: true,
+  });
+}
+
+async function handleLinkPanelSelect(interaction: StringSelectMenuInteraction) {
+  await interaction.deferUpdate();
+
+  const [panelIdStr, channelId, buyerRoleId] = interaction.values[0].split(":");
+  const panelId = parseInt(panelIdStr, 10);
+
+  const [panel] = await db
+    .select()
+    .from(panelsTable)
+    .where(eq(panelsTable.id, panelId))
+    .limit(1);
+  if (!panel) {
+    await interaction.followUp({ content: "Panel not found.", ephemeral: true });
+    return;
+  }
+
+  const [script] = await db
+    .select()
+    .from(scriptsTable)
+    .where(eq(scriptsTable.id, panel.scriptId))
+    .limit(1);
+
+  if (buyerRoleId) {
+    await db
+      .update(panelsTable)
+      .set({ buyerRoleId })
+      .where(eq(panelsTable.id, panelId));
+  }
+
+  const embed = buildPanelEmbed(
+    panel,
+    script ?? { name: "Unknown", version: "?" },
+  );
+
+  const targetChannel = interaction.guild?.channels.cache.get(channelId);
+  if (targetChannel?.isTextBased()) {
+    const msg = await (targetChannel as TextChannel).send({
+      embeds: [embed],
+      components: buildPanelRows(panelId),
+    });
+    await db
+      .update(panelsTable)
+      .set({ channelId, messageId: msg.id })
+      .where(eq(panelsTable.id, panelId));
+    await interaction.editReply({
+      content: `✅ Panel **${panel.name}** sent to <#${channelId}>`,
+      components: [],
+    });
+  } else {
+    await interaction.editReply({
+      content: "Cannot send to that channel.",
+      components: [],
+    });
+  }
 }
 
 async function handleServerSetup(interaction: ChatInputCommandInteraction) {
@@ -1181,6 +1291,24 @@ client.on("guildCreate", async (guild) => {
 });
 
 client.on("interactionCreate", async (interaction: Interaction) => {
+  // ---- String select menu ----
+  if (interaction.isStringSelectMenu()) {
+    if (interaction.customId === "linkpanel_select") {
+      try {
+        await handleLinkPanelSelect(interaction as StringSelectMenuInteraction);
+      } catch (err) {
+        logger.error({ err }, "linkpanel_select error");
+        const msg = "An error occurred. Please try again.";
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp({ content: msg, ephemeral: true }).catch(() => {});
+        } else {
+          await interaction.reply({ content: msg, ephemeral: true }).catch(() => {});
+        }
+      }
+    }
+    return;
+  }
+
   // ---- Button ----
   if (interaction.isButton()) {
     const { action: btnAction, param: btnParam } = parseButtonId(interaction.customId);
@@ -1325,6 +1453,8 @@ client.on("interactionCreate", async (interaction: Interaction) => {
     } else if (commandName === "server") {
       const sub = interaction.options.getSubcommand();
       if (sub === "setup") await handleServerSetup(interaction);
+    } else if (commandName === "linkpanel") {
+      await handleLinkPanel(interaction);
     }
   } catch (err) {
     logger.error({ err, commandName }, "Command error");

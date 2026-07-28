@@ -316,6 +316,7 @@ export function Panels() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-16">ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Script</TableHead>
                 <TableHead>Last Sent</TableHead>
@@ -328,6 +329,7 @@ export function Panels() {
                 const script = scripts?.find((s) => s.id === panel.scriptId)
                 return (
                   <TableRow key={panel.id}>
+                    <TableCell className="font-mono text-xs text-muted-foreground select-all">{panel.id}</TableCell>
                     <TableCell className="font-medium">{panel.name}</TableCell>
                     <TableCell>
                       {script
