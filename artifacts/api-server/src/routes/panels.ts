@@ -132,21 +132,21 @@ router.post("/panels/:id/send", requireAuth, async (req, res): Promise<void> => 
     {
       type: 1,
       components: [
-        { type: 2, label: "📜 View Script",    style: 1, custom_id: `view_script_${panel.id}` },
-        { type: 2, label: "🔑 Redeem Key",     style: 3, custom_id: `redeem_key_${panel.id}` },
+        { type: 2, label: "📜 Get Script",      style: 1, custom_id: `get_script:${panel.id}` },
+        { type: 2, label: "🔑 Redeem Key",     style: 3, custom_id: `redeem_key:${panel.id}` },
       ],
     },
     {
       type: 1,
       components: [
-        { type: 2, label: "📊 Stats",          style: 2, custom_id: `stats_${panel.id}` },
-        { type: 2, label: "👤 Get Buyer Role", style: 1, custom_id: `buyer_role_${panel.id}` },
+        { type: 2, label: "📊 Stats",          style: 2, custom_id: `stats:${panel.id}` },
+        { type: 2, label: "👤 Get Buyer Role", style: 1, custom_id: `get_role:${panel.id}` },
       ],
     },
     {
       type: 1,
       components: [
-        { type: 2, label: "⚙️ Reset HWID",    style: 4, custom_id: `reset_hwid_${panel.id}` },
+        { type: 2, label: "⚙️ Reset HWID",    style: 4, custom_id: `reset_hwid:${panel.id}` },
       ],
     },
   ];
