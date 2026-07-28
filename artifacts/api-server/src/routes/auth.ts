@@ -22,6 +22,11 @@ function getRedirectUri(req: { headers: { host?: string } }): string {
   return `http://${host}/api/auth/discord/callback`;
 }
 
+// Returns the exact redirect URI this server will send to Discord — useful for setup
+router.get("/auth/redirect-uri", (req, res): void => {
+  res.json({ redirectUri: getRedirectUri(req) });
+});
+
 router.get("/auth/discord", (req, res): void => {
   const clientId = process.env.DISCORD_CLIENT_ID;
   if (!clientId) {

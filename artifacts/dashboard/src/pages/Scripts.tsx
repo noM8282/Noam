@@ -253,6 +253,7 @@ export function Scripts() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-16">ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Version</TableHead>
                 <TableHead>Code</TableHead>
@@ -264,6 +265,7 @@ export function Scripts() {
             <TableBody>
               {scripts?.map((script) => (
                 <TableRow key={script.id}>
+                  <TableCell className="font-mono text-xs text-muted-foreground select-all">{script.id}</TableCell>
                   <TableCell className="font-medium">
                     <Link href={`/scripts/${script.id}`} className="hover:underline text-primary">
                       {script.name}
