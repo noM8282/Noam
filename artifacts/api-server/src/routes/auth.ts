@@ -67,7 +67,8 @@ router.get("/auth/discord/callback", async (req, res): Promise<void> => {
   });
 
   if (!tokenRes.ok) {
-    req.log.error({ status: tokenRes.status }, "Failed to exchange Discord code");
+    const body = await tokenRes.text().catch(() => "(unreadable)");
+    req.log.error({ status: tokenRes.status, body, redirectUri }, "Failed to exchange Discord code");
     res.status(400).json({ error: "Failed to exchange authorization code" });
     return;
   }
