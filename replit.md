@@ -75,3 +75,5 @@ _Populate as you build — explicit user instructions worth remembering across s
 - Discord OAuth2 redirect URI must be registered in the Discord Developer Portal
 - Bot slash commands register globally on startup (~1 hour Discord propagation) or per-guild immediately
 - Session cookie is `secure: true` in production — ensure HTTPS
+- **Database**: `DATABASE_URL` is runtime-managed by Replit. If a `DATABASE_URL` secret exists, `lib/db/src/index.ts` validates the hostname and falls back to `PGHOST`/`PGPORT`/`PGUSER`/`PGPASSWORD`/`PGDATABASE` env vars (Replit's managed Postgres at `helium:5432/heliumdb`) when the secret points to an invalid host.
+- **Panel buttons**: Panels sent via `/panel send` now include "Get Key" 🔑 and "Check Status" ✅ buttons. Button custom IDs follow the pattern `get_key:{panelId}` and `check_status:{panelId}` — the bot handles these in the `interactionCreate` listener.
