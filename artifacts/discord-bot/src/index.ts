@@ -33,6 +33,11 @@ import { randomUUID } from "crypto";
 
 const logger = pino({ level: "info" });
 
+// Prevent unhandled promise rejections (e.g. expired interaction tokens) from crashing the process
+process.on("unhandledRejection", (err) => {
+  logger.error({ err }, "Unhandled rejection — ignoring to keep bot alive");
+});
+
 const token = process.env.DISCORD_BOT_TOKEN;
 if (!token) {
   logger.error("DISCORD_BOT_TOKEN is not set");
@@ -333,38 +338,14 @@ function buildPanelEmbed(
 }
 
 function buildPanelRows(panelId: number) {
-  const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`redeem_key:${panelId}`)
       .setLabel("Redeem Key")
       .setStyle(ButtonStyle.Success)
       .setEmoji("🔑"),
-    new ButtonBuilder()
-      .setCustomId(`get_script:${panelId}`)
-      .setLabel("Get Script")
-      .setStyle(ButtonStyle.Primary)
-      .setEmoji("📜"),
-    new ButtonBuilder()
-      .setCustomId(`stats:${panelId}`)
-      .setLabel("Stats")
-      .setStyle(ButtonStyle.Secondary)
-      .setEmoji("📊"),
   );
-
-  const row2 = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`get_role:${panelId}`)
-      .setLabel("Get Buyer Role")
-      .setStyle(ButtonStyle.Secondary)
-      .setEmoji("🏷️"),
-    new ButtonBuilder()
-      .setCustomId(`reset_hwid:${panelId}`)
-      .setLabel("Reset HWID")
-      .setStyle(ButtonStyle.Danger)
-      .setEmoji("🔄"),
-  );
-
-  return [row1, row2];
+  return [row];
 }
 
 async function handlePanelSend(interaction: ChatInputCommandInteraction) {
@@ -1189,14 +1170,14 @@ client.on("interactionCreate", async (interaction: Interaction) => {
 
       const modal = new ModalBuilder()
         .setCustomId(`modal_redeem:${panelId}`)
-        .setTitle("Redeem License Key");
+        .setTitle("Redeem a key");
 
       const keyInput = new TextInputBuilder()
         .setCustomId("key_value")
-        .setLabel("Enter your license key")
+        .setLabel("Enter script key below:")
         .setStyle(TextInputStyle.Short)
         .setRequired(true)
-        .setPlaceholder("SCH-XXXXXXXXXXXXXXXXXXXX");
+        .setPlaceholder("VZeGvaxErVhZfVBLUqGqYHuVxTmfOhDm");
 
       modal.addComponents(
         new ActionRowBuilder<TextInputBuilder>().addComponents(keyInput),
