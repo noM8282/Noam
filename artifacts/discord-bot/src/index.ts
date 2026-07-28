@@ -338,14 +338,29 @@ function buildPanelEmbed(
 }
 
 function buildPanelRows(panelId: number) {
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+  const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`redeem_key:${panelId}`)
       .setLabel("Redeem Key")
       .setStyle(ButtonStyle.Success)
       .setEmoji("🔑"),
+    new ButtonBuilder()
+      .setCustomId(`get_script:${panelId}`)
+      .setLabel("Get Script")
+      .setStyle(ButtonStyle.Primary)
+      .setEmoji("📜"),
+    new ButtonBuilder()
+      .setCustomId(`stats:${panelId}`)
+      .setLabel("My Stats")
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji("📊"),
+    new ButtonBuilder()
+      .setCustomId(`get_role:${panelId}`)
+      .setLabel("Get Buyer Role")
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji("🎖️"),
   );
-  return [row];
+  return [row1];
 }
 
 async function handlePanelSend(interaction: ChatInputCommandInteraction) {
@@ -1030,7 +1045,7 @@ async function handleRedeemKeyModal(
 
   const embed = new EmbedBuilder()
     .setTitle("✅ Key Redeemed!")
-    .setDescription("Your key has been successfully activated.")
+    .setDescription("Your key has been successfully activated. Click **Get Script** below to get your loader.")
     .addFields(
       { name: "Key", value: `\`${license.key}\``, inline: false },
       {
@@ -1045,7 +1060,15 @@ async function handleRedeemKeyModal(
     .setFooter({ text: "LuaBox • Script Management" })
     .setTimestamp();
 
-  await interaction.editReply({ embeds: [embed] });
+  const getScriptRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`get_script:${panelId}`)
+      .setLabel("Get Script")
+      .setStyle(ButtonStyle.Primary)
+      .setEmoji("📜"),
+  );
+
+  await interaction.editReply({ embeds: [embed], components: [getScriptRow] });
 }
 
 // ---------------------------------------------------------------------------
