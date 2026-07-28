@@ -188,6 +188,7 @@ async function handlePanelSend(interaction: ChatInputCommandInteraction) {
     .setTimestamp();
 
   // Add interactive buttons to the panel
+  const dashboardUrl = `https://${process.env.REPLIT_DEV_DOMAIN ?? ""}`;
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`get_key:${panel.id}`)
@@ -198,7 +199,12 @@ async function handlePanelSend(interaction: ChatInputCommandInteraction) {
       .setCustomId(`check_status:${panel.id}`)
       .setLabel("Check Status")
       .setStyle(ButtonStyle.Secondary)
-      .setEmoji("✅")
+      .setEmoji("✅"),
+    new ButtonBuilder()
+      .setLabel("Dashboard")
+      .setStyle(ButtonStyle.Link)
+      .setURL(dashboardUrl)
+      .setEmoji("🌐")
   );
 
   const targetChannel = interaction.guild?.channels.cache.get(channel.id);
@@ -420,17 +426,21 @@ client.on("guildCreate", async (guild) => {
 });
 
 async function handleButtonInteraction(interaction: ButtonInteraction) {
+  // Defer immediately — Discord requires a response within 3 seconds.
+  // All DB work happens after this, then we editReply with the real content.
+  await interaction.deferReply({ ephemeral: true });
+
   const [action, panelIdStr] = interaction.customId.split(":");
   const panelId = parseInt(panelIdStr, 10);
 
   if (isNaN(panelId)) {
-    await interaction.reply({ content: "Invalid panel.", ephemeral: true });
+    await interaction.editReply({ content: "Invalid panel." });
     return;
   }
 
   const [panel] = await db.select().from(panelsTable).where(eq(panelsTable.id, panelId)).limit(1);
   if (!panel) {
-    await interaction.reply({ content: "This panel no longer exists.", ephemeral: true });
+    await interaction.editReply({ content: "This panel no longer exists." });
     return;
   }
 
@@ -441,11 +451,20 @@ async function handleButtonInteraction(interaction: ButtonInteraction) {
     .where(eq(usersTable.discordId, interaction.user.id))
     .limit(1);
 
+  const dashboardUrl = `https://${process.env.REPLIT_DEV_DOMAIN ?? ""}`;
+  const dashboardRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setLabel("Open Dashboard")
+      .setStyle(ButtonStyle.Link)
+      .setURL(dashboardUrl)
+      .setEmoji("🌐")
+  );
+
   if (action === "get_key") {
     if (!user) {
-      await interaction.reply({
-        content: "You need to log in to the dashboard first to get a key.",
-        ephemeral: true,
+      await interaction.editReply({
+        content: `You need to log in to the dashboard first before you can get a key.`,
+        components: [dashboardRow],
       });
       return;
     }
@@ -464,9 +483,9 @@ async function handleButtonInteraction(interaction: ButtonInteraction) {
       .limit(1);
 
     if (!license) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "You don't have a license key for this script. Contact the script owner.",
-        ephemeral: true,
+        components: [dashboardRow],
       });
       return;
     }
@@ -476,48 +495,50 @@ async function handleButtonInteraction(interaction: ButtonInteraction) {
       .addFields(
         { name: "Key", value: `\`${license.key}\`` },
         { name: "Status", value: license.status },
-        ...(license.expiresAt ? [{ name: "Expires", value: `<t:${Math.floor(license.expiresAt.getTime() / 1000)}:R>` }] : [])
+        ...(license.expiresAt
+          ? [{ name: "Expires", value: `<t:${Math.floor(license.expiresAt.getTime() / 1000)}:R>` }]
+          : [])
       )
       .setColor(0x57f287)
       .setTimestamp();
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.editReply({ embeds: [embed] });
     return;
   }
 
   if (action === "check_status") {
     if (!user) {
-      await interaction.reply({
-        content: "You need to log in to the dashboard first to check your status.",
-        ephemeral: true,
+      await interaction.editReply({
+        content: `You need to log in to the dashboard first to check your status.`,
+        components: [dashboardRow],
       });
       return;
     }
 
-    // Check whitelist status
-    const [whitelisted] = await db
-      .select()
-      .from(whitelistTable)
-      .where(
-        and(
-          eq(whitelistTable.scriptId, panel.scriptId),
-          eq(whitelistTable.discordUserId, interaction.user.id)
+    // Run whitelist + license queries in parallel
+    const [[whitelisted], [license]] = await Promise.all([
+      db
+        .select()
+        .from(whitelistTable)
+        .where(
+          and(
+            eq(whitelistTable.scriptId, panel.scriptId),
+            eq(whitelistTable.discordUserId, interaction.user.id)
+          )
         )
-      )
-      .limit(1);
-
-    // Check for an active license
-    const [license] = await db
-      .select()
-      .from(licensesTable)
-      .where(
-        and(
-          eq(licensesTable.scriptId, panel.scriptId),
-          eq(licensesTable.userId, user.id),
-          eq(licensesTable.status, "active")
+        .limit(1),
+      db
+        .select()
+        .from(licensesTable)
+        .where(
+          and(
+            eq(licensesTable.scriptId, panel.scriptId),
+            eq(licensesTable.userId, user.id),
+            eq(licensesTable.status, "active")
+          )
         )
-      )
-      .limit(1);
+        .limit(1),
+    ]);
 
     const embed = new EmbedBuilder()
       .setTitle("Your Access Status")
@@ -528,11 +549,11 @@ async function handleButtonInteraction(interaction: ButtonInteraction) {
       .setColor(whitelisted || license ? 0x57f287 : 0xed4245)
       .setTimestamp();
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.editReply({ embeds: [embed] });
     return;
   }
 
-  await interaction.reply({ content: "Unknown action.", ephemeral: true });
+  await interaction.editReply({ content: "Unknown action." });
 }
 
 client.on("interactionCreate", async (interaction: Interaction) => {
