@@ -338,7 +338,7 @@ function buildPanelEmbed(
 }
 
 function buildPanelRows(panelId: number) {
-  const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`redeem_key:${panelId}`)
       .setLabel("Redeem Key")
@@ -348,19 +348,24 @@ function buildPanelRows(panelId: number) {
       .setCustomId(`get_script:${panelId}`)
       .setLabel("Get Script")
       .setStyle(ButtonStyle.Primary)
-      .setEmoji("📜"),
-    new ButtonBuilder()
-      .setCustomId(`stats:${panelId}`)
-      .setLabel("My Stats")
-      .setStyle(ButtonStyle.Secondary)
-      .setEmoji("📊"),
+      .setEmoji("📋"),
     new ButtonBuilder()
       .setCustomId(`get_role:${panelId}`)
-      .setLabel("Get Buyer Role")
+      .setLabel("Get Role")
+      .setStyle(ButtonStyle.Primary)
+      .setEmoji("👤"),
+    new ButtonBuilder()
+      .setCustomId(`reset_hwid:${panelId}`)
+      .setLabel("Reset HWID")
       .setStyle(ButtonStyle.Secondary)
-      .setEmoji("🎖️"),
+      .setEmoji("⚙️"),
+    new ButtonBuilder()
+      .setCustomId(`stats:${panelId}`)
+      .setLabel("Get Stats")
+      .setStyle(ButtonStyle.Primary)
+      .setEmoji("📊"),
   );
-  return [row1];
+  return [row];
 }
 
 async function handlePanelSend(interaction: ChatInputCommandInteraction) {
@@ -870,16 +875,13 @@ async function handleButtonInteraction(interaction: ButtonInteraction) {
         return;
       }
 
-      const scriptLine = `script_key="${license.key}"; loadstring(game:HttpGet("${loaderUrl}"))()`;
-      const divider = "─".repeat(33);
+      const scriptLine = `loadstring(game:HttpGet("${loaderUrl}"))()`;
 
       const embed = new EmbedBuilder()
         .setTitle("📜 Your Script")
-        .setDescription(
-          `Paste this into your executor. Keep it private — do not share it.\n${divider}\n\`\`\`lua\n${scriptLine}\n\`\`\``,
-        )
+        .setDescription(`\`\`\`lua\nscript_key="${license.key}";\n${scriptLine}\n\`\`\``)
         .setColor(0x57f287)
-        .setFooter({ text: "LuaBox • Script Management" })
+        .setFooter({ text: "LuaBox • Keep this private, do not share it." })
         .setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });
