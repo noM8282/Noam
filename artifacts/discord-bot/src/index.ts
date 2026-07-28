@@ -383,34 +383,38 @@ function buildPanelEmbed(
 }
 
 function buildPanelRows(panelId: number) {
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+  const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`get_script:${panelId}`)
+      .setLabel("View Script")
+      .setStyle(ButtonStyle.Primary)
+      .setEmoji("📜"),
     new ButtonBuilder()
       .setCustomId(`redeem_key:${panelId}`)
       .setLabel("Redeem Key")
       .setStyle(ButtonStyle.Success)
       .setEmoji("🔑"),
+  );
+  const row2 = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId(`get_script:${panelId}`)
-      .setLabel("Get Script")
-      .setStyle(ButtonStyle.Primary)
-      .setEmoji("📋"),
+      .setCustomId(`stats:${panelId}`)
+      .setLabel("Stats")
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji("📊"),
     new ButtonBuilder()
       .setCustomId(`get_role:${panelId}`)
-      .setLabel("Get Role")
+      .setLabel("Get Buyer Role")
       .setStyle(ButtonStyle.Primary)
       .setEmoji("👤"),
+  );
+  const row3 = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`reset_hwid:${panelId}`)
       .setLabel("Reset HWID")
-      .setStyle(ButtonStyle.Secondary)
+      .setStyle(ButtonStyle.Danger)
       .setEmoji("⚙️"),
-    new ButtonBuilder()
-      .setCustomId(`stats:${panelId}`)
-      .setLabel("Get Stats")
-      .setStyle(ButtonStyle.Primary)
-      .setEmoji("📊"),
   );
-  return [row];
+  return [row1, row2, row3];
 }
 
 async function handlePanelSend(interaction: ChatInputCommandInteraction) {
@@ -882,7 +886,7 @@ async function handleServerSetup(interaction: ChatInputCommandInteraction) {
 // ---------------------------------------------------------------------------
 
 const NO_ACCESS_MSG =
-  "❌ You do not have valid access to this Panel.\nRedeem a key first using the **🔑 Redeem Key** button.";
+  "You do not have valid access to this Panel.";
 
 function parseButtonId(customId: string): { action: string; param: string } {
   if (customId.includes(":")) {
@@ -1013,12 +1017,15 @@ async function handleButtonInteraction(interaction: ButtonInteraction) {
       }
 
       const scriptLine = `loadstring(game:HttpGet("${loaderUrl}"))()`;
+      const codeBlock = `script_key="${license.key}";\n${scriptLine}`;
 
       const embed = new EmbedBuilder()
         .setTitle("📜 Your Script")
-        .setDescription(`\`\`\`lua\nscript_key="${license.key}";\n${scriptLine}\n\`\`\``)
-        .setColor(0x57f287)
-        .setFooter({ text: "LuaBox • Keep this private, do not share it." })
+        .setDescription(
+          `Paste this into your executor. **Keep it private —\ndo not share it.**\n${"─".repeat(34)}\n\`\`\`lua\n${codeBlock}\n\`\`\``,
+        )
+        .setColor(0x5865f2)
+        .setFooter({ text: "LuaBox • Script Management" })
         .setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });
@@ -1030,30 +1037,25 @@ async function handleButtonInteraction(interaction: ButtonInteraction) {
       const now = new Date();
       const expired = license.expiresAt && license.expiresAt <= now;
 
+      const licenseLabel = license.whitelisted
+        ? "Whitelisted (No Key)"
+        : `\`${license.key}\``;
+
+      const hwidValue = license.hwid ? `\`${license.hwid}\`` : "Free HWID";
+
+      const expiryValue = license.expiresAt
+        ? `<t:${Math.floor(license.expiresAt.getTime() / 1000)}:R>`
+        : "Lifetime";
+
       const embed = new EmbedBuilder()
-        .setTitle("📊 Your Stats")
+        .setTitle("📊 License Information")
         .addFields(
-          { name: "Key", value: `\`${license.key}\``, inline: false },
-          {
-            name: "Status",
-            value: expired ? "⏰ Expired" : "✅ Active",
-            inline: true,
-          },
-          {
-            name: "Expiry",
-            value: license.expiresAt
-              ? `<t:${Math.floor(license.expiresAt.getTime() / 1000)}:R>`
-              : "♾️ Lifetime",
-            inline: true,
-          },
-          {
-            name: "HWID",
-            value: license.hwid ? `\`${license.hwid}\`` : "Not locked",
-            inline: true,
-          },
+          { name: "ℹ️ License", value: licenseLabel, inline: false },
+          { name: "💻 HWID", value: hwidValue, inline: false },
+          { name: "⏳ Expires", value: expiryValue, inline: false },
         )
-        .setColor(expired ? 0xed4245 : 0x57f287)
-        .setFooter({ text: "LuaBox • Script Management" })
+        .setColor(expired ? 0xed4245 : 0x5865f2)
+        .setFooter({ text: "LuaBox • License Management" })
         .setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });
