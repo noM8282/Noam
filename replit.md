@@ -42,6 +42,17 @@ To regenerate the API client/zod schemas after changing `lib/api-spec/openapi.ya
 pnpm --filter @workspace/api-spec run generate
 ```
 
+## Setup status
+
+All services verified running after initial setup (2026-07-28):
+- ✅ `pnpm install` — dependencies installed across all workspace packages
+- ✅ `pnpm --filter @workspace/db run push` — Drizzle schema pushed to Replit PostgreSQL
+- ✅ Dashboard (`artifacts/dashboard: web`) — Vite dev server running, login page visible
+- ✅ API Server (`artifacts/api-server: API Server`) — Express server listening, health check OK
+- ✅ Discord Bot (`Discord Bot`) — Bot online, global slash commands registered
+
+Secrets configured: `SESSION_SECRET`, `DISCORD_BOT_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`
+
 ## User preferences
 
 - Keep existing monorepo structure (pnpm workspace)
