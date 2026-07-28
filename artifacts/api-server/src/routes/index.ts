@@ -7,6 +7,7 @@ import panelsRouter from "./panels";
 import keysRouter from "./keys";
 import serversRouter from "./servers";
 import whitelistRouter from "./whitelist";
+import guildsRouter from "./guilds";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(panelsRouter);
 router.use(keysRouter);
 router.use(serversRouter);
 router.use(whitelistRouter);
+router.use(guildsRouter);
 
 export default router;

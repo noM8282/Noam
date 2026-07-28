@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, panelsTable } from "@workspace/db";
+import { db, panelsTable, scriptsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import {
   CreatePanelBody,
@@ -12,10 +12,17 @@ import {
   DeletePanelParams,
   DeletePanelResponse,
   ListPanelsResponse,
+  SendPanelParams,
+  SendPanelBody,
+  SendPanelResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
 
 const router = Router();
+
+const DISCORD_API = "https://discord.com/api/v10";
+// Amethyst purple in decimal (0x7c3aed)
+const EMBED_COLOR = 8141549;
 
 function parseId(raw: string | string[]): number {
   return parseInt(Array.isArray(raw) ? raw[0] : raw, 10);
@@ -117,6 +124,100 @@ router.delete("/panels/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
   res.json(DeletePanelResponse.parse({ success: true }));
+});
+
+// POST /panels/:id/send — send the panel as a Discord embed to a channel
+router.post("/panels/:id/send", requireAuth, async (req, res): Promise<void> => {
+  const paramsParsed = SendPanelParams.safeParse({ id: parseId(req.params.id) });
+  if (!paramsParsed.success) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const bodyParsed = SendPanelBody.safeParse(req.body);
+  if (!bodyParsed.success) {
+    res.status(400).json({ error: bodyParsed.error.message });
+    return;
+  }
+
+  const botToken = process.env.DISCORD_BOT_TOKEN;
+  if (!botToken) {
+    res.status(500).json({ error: "DISCORD_BOT_TOKEN not configured" });
+    return;
+  }
+
+  const userId = req.session.userId!;
+  const [panel] = await db
+    .select()
+    .from(panelsTable)
+    .where(and(eq(panelsTable.id, paramsParsed.data.id), eq(panelsTable.ownerId, userId)));
+
+  if (!panel) {
+    res.status(404).json({ error: "Panel not found" });
+    return;
+  }
+
+  // Optionally grab script name for the embed
+  let scriptName = `Script #${panel.scriptId}`;
+  const [script] = await db
+    .select({ name: scriptsTable.name })
+    .from(scriptsTable)
+    .where(eq(scriptsTable.id, panel.scriptId));
+  if (script) scriptName = script.name;
+
+  const embed = {
+    title: panel.name,
+    description: panel.description ?? `Manage access to **${scriptName}**`,
+    color: EMBED_COLOR,
+    fields: [{ name: "Script", value: scriptName, inline: true }],
+    footer: { text: "LuaBox • License Management" },
+    timestamp: new Date().toISOString(),
+  };
+
+  const components = [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          label: "Get License",
+          style: 1, // PRIMARY (blurple)
+          custom_id: `get_license_${panel.id}`,
+        },
+        {
+          type: 2,
+          label: "Check Key",
+          style: 2, // SECONDARY
+          custom_id: `check_key_${panel.id}`,
+        },
+      ],
+    },
+  ];
+
+  const discordRes = await fetch(`${DISCORD_API}/channels/${bodyParsed.data.channelId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${botToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ embeds: [embed], components }),
+  });
+
+  if (!discordRes.ok) {
+    const err = await discordRes.text();
+    req.log.error({ status: discordRes.status, err }, "Failed to send panel to Discord");
+    res.status(502).json({ error: "Failed to send panel to Discord. Make sure the bot has permission to send messages in that channel." });
+    return;
+  }
+
+  const message = (await discordRes.json()) as { id: string };
+
+  // Store channelId and messageId on the panel
+  await db
+    .update(panelsTable)
+    .set({ channelId: bodyParsed.data.channelId, messageId: message.id })
+    .where(eq(panelsTable.id, panel.id));
+
+  res.json(SendPanelResponse.parse({ success: true }));
 });
 
 export default router;
